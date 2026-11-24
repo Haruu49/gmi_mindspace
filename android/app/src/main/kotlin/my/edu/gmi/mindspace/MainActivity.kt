@@ -1,4 +1,4 @@
-package my.edu.gmi.gmi_mindspace
+package my.edu.gmi.mindspace
 
 import io.flutter.embedding.android.FlutterActivity
 

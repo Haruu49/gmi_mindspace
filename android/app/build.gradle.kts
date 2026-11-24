@@ -1,11 +1,22 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Release signing: read from android/key.properties, which is git-ignored and
+// points at a keystore kept OUTSIDE the repository. See docs/DEPLOYMENT.md.
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        keystorePropertiesFile.inputStream().use { load(it) }
+    }
+}
+
 android {
-    namespace = "my.edu.gmi.gmi_mindspace"
+    namespace = "my.edu.gmi.mindspace"
     // flutter_local_notifications 23 and androidx.core 1.19 require API 37.
     compileSdk = 37
     ndkVersion = flutter.ndkVersion
@@ -18,8 +29,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "my.edu.gmi.gmi_mindspace"
+        applicationId = "my.edu.gmi.mindspace"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -32,11 +42,22 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Never fall back to the debug key: a release build without
+            // key.properties fails (see the check below).
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
@@ -53,4 +74,15 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+}
+
+// Fail fast instead of producing an unsigned or debug-signed release APK.
+gradle.taskGraph.whenReady {
+    val buildingRelease = allTasks.any { it.name.contains("Release") && it.project == project }
+    if (buildingRelease && !keystorePropertiesFile.exists()) {
+        throw GradleException(
+            "android/key.properties is missing. Release builds must be signed with the " +
+                "GMI MindSpace release key. See docs/DEPLOYMENT.md (Android signing).",
+        )
+    }
 }

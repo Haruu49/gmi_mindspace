@@ -58,6 +58,8 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   mocktail: ^1.0.5
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.8
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -83,3 +85,30 @@ flutter:
           weight: 700
         - asset: assets/fonts/Nunito-ExtraBold.ttf
           weight: 800
+
+# App icon and launch screen, generated from the code-drawn BrandLogo.
+# Re-render sources: flutter test tool/render_brand_assets_test.dart
+# Regenerate:        dart run flutter_launcher_icons
+#                    dart run flutter_native_splash:create
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/branding/icon.png
+  adaptive_icon_background: "#EDE6F5"
+  adaptive_icon_foreground: assets/branding/icon_foreground.png
+  remove_alpha_ios: true
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#FAF9F6"
+  color_dark: "#161A23"
+  image: assets/branding/splash.png
+  android_12:
+    color: "#FAF9F6"
+    color_dark: "#161A23"
+    image: assets/branding/splash.png
+    icon_background_color: "#EDE6F5"
+    icon_background_color_dark: "#EDE6F5"
+  android: true
+  ios: true
+  web: false

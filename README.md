@@ -5,8 +5,21 @@
 A student-friendly mental health and well-being app for the German-Malaysian Institute (GMI),
 built with Flutter (Android + iOS), Riverpod, GoRouter and Supabase (PostgreSQL + Row Level Security).
 
-> **Status: development build – not production-ready.** See [Readiness](#readiness) for exactly
-> what has and has not been verified.
+> **Status: private-testing build – not production-ready.** A signed Android APK exists for
+> selected testers; iOS is configured but not yet built. See [Readiness](#readiness) and
+> [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) for exactly what has and has not been verified.
+
+## Documentation
+
+| Document | For |
+|---|---|
+| [Installation guide](docs/INSTALLATION.md) | Testers installing the APK; developers setting up the project |
+| [User guide](docs/USER_GUIDE.md) | Students |
+| [Counsellor guide](docs/COUNSELLOR_GUIDE.md) | Counsellors and administrators |
+| [Database documentation](docs/DATABASE.md) | Schema, RLS, functions, triggers |
+| [Deployment guide](docs/DEPLOYMENT.md) | Signed Android APK, iOS (Mac, signing, Ad Hoc, TestFlight), Supabase checklist |
+| [Testing report](docs/TESTING_REPORT.md) | What was tested, how, and the results |
+| [Known issues](docs/KNOWN_ISSUES.md) | Open problems and outstanding tasks |
 
 ---
 
@@ -144,15 +157,16 @@ Without `env/dev.json` the app still starts and shows a *Setup needed* screen, w
 > Android Studio ▸ SDK Manager ▸ SDK Tools ▸ *Android SDK Command-line Tools*, then run
 > `flutter doctor --android-licenses`.
 
-**iOS** builds need a Mac with Xcode: `flutter build ios --dart-define-from-file=env/dev.json`.
+**iOS** builds need a Mac with Xcode; see [docs/DEPLOYMENT.md › iOS](docs/DEPLOYMENT.md#3-ios).
+**Signed Android APK for testers:** see [docs/DEPLOYMENT.md › Android](docs/DEPLOYMENT.md#2-android).
 
 ---
 
 ## Supabase setup
 
 **Development project (already set up, 2026-11-23):** `gmi-mindspace-dev`
-(ref `ggxjsrnhzlpeqpwecqzr`, region Singapore, free plan). The first 14 migrations and the seed are
-applied (migration `015`, counsellor sign-up, is **not applied yet**: run `supabase db push`); `env/dev.json` on this laptop points to it. Verified live: 19 tables with RLS, 66 policies,
+(ref `ggxjsrnhzlpeqpwecqzr`, region Singapore, free plan). All 15 migrations and the seed are
+applied (`015` on 2026-11-24). Three fictional test accounts exist (two students, one counsellor; credentials in the git-ignored `env/test_accounts.json`); `env/dev.json` on this laptop points to it. Verified live: 19 tables with RLS, 66 policies,
 reminder cron job scheduled, realtime on `notifications`, and every table / admin function returns
 **401 permission denied** to signed-out requests. Supabase's security advisor lists 20
 "SECURITY DEFINER function executable by authenticated" warnings – these are the intended app
@@ -254,7 +268,9 @@ Groups smaller than 5 students are suppressed. There are no diagnostic, predicti
 | UI / responsive | included above | 7 device sizes (320 × 568 → iPad, plus landscape), keyboard open, 130 % text, dark mode, 48 dp tap targets, text contrast |
 | Database RLS | `bash supabase/tests/run_local.sh` | **78 / 78 checks passed** with fictional accounts (students, counsellors, admins and counsellor sign-ups) on PostgreSQL 16 |
 | Device workflows | `flutter test integration_test/app_flow_test.dart -d <device>` | **3 / 3 passed on the Android emulator** (Medium_Phone, emulator-5554): student login → mood check-in → journal → logout; counsellor routing; session expiry. Uses in-memory data, not a live server. |
-| Live Supabase security | `integration_test/supabase_security_test.dart` | Written; **not yet run** (needs a dev project and fictional test accounts) |
+| Live smoke test | `integration_test/live_smoke_test.dart` | **1 / 1 passed (2026-11-24)** on the emulator against `gmi-mindspace-dev`: login, navigation, all six student modules, data written and read back, sign-out, counsellor login |
+| Live Supabase security | `integration_test/supabase_security_test.dart` | **6 / 6 passed (2026-11-24)** with fictional accounts on `gmi-mindspace-dev` |
+| Release APK (manual) | adb on the emulator | Session persists after restart; friendly offline messages at launch, mid-session and at login. See [docs/TESTING_REPORT.md](docs/TESTING_REPORT.md) |
 
 The RLS suite proves, among others, that a student cannot read or edit another student's journal or
 mood records, that counsellors and admins cannot read journals or mood notes, that a student cannot make
@@ -270,15 +286,18 @@ The local suite uses `supabase/tests/supabase_shim.sql`, which recreates the min
 ## Readiness
 
 **Verified:** static analysis, 113 Flutter tests, 78 database security checks, migrations apply cleanly
-on PostgreSQL 16 and on the Supabase dev project (signed-out access denied), the Android debug APK builds, and 3 integration workflows pass on the Android emulator.
+on PostgreSQL 16 and on the Supabase dev project (signed-out access denied), a **signed release APK**
+(`my.edu.gmi.mindspace`, 1.0.0+1) builds and runs, 3 integration workflows pass on the Android emulator,
+and the live smoke test (6 student modules) and live security test (6 checks) pass against the dev
+project with fictional accounts. Details: [docs/TESTING_REPORT.md](docs/TESTING_REPORT.md).
 
-**Not yet verified, required before any real use:**
+**Not yet verified, required before any real use** (full list: [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md)):
 
-1. Create fictional test accounts on the dev project and run the live security test (`integration_test/supabase_security_test.dart`).
-2. Run the app on real Android phones and on iOS (needs a Mac), connected to the real backend.
+1. Create a separate **production** Supabase project (the APK currently points at the dev project).
+2. Run the app on real Android phones and on iOS (needs a Mac), using the checklist in the testing report.
 3. GMI Counselling Unit to **verify every emergency number and opening hour** in `lib/core/constants/emergency_contacts.dart`.
 4. Privacy / PDPA review, data-retention policy, and the encryption decision above.
-5. Configure FCM (optional), release signing, app icons and store listings.
+5. Configure FCM (optional). (Release signing, app icon and splash screen are done; no store listing is planned.)
 6. Hardening items found in self-review:
    - Sessions are stored by supabase_flutter in SharedPreferences (app sandbox). Consider a
      Keychain / Keystore-backed storage.
