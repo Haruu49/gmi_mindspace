@@ -13,10 +13,17 @@ class LearningRepository {
 
   final SupabaseClient _db;
   static const bucket = 'learning-media';
+
+  /// Private bucket for PDF materials (migration 016).
+  static const filesBucket = 'learning-files';
+
+  /// How long a student's link to a PDF stays valid.
+  static const signedUrlSeconds = 3600;
+
   static const _cols = 'id, title, description, category, format, content, image_url, media_url, '
-      'read_minutes, published, published_at, created_at';
+      'read_minutes, published, published_at, created_at, file_path, file_name, file_size_bytes';
   static const _listCols = 'id, title, description, category, format, image_url, media_url, '
-      'read_minutes, published, published_at, created_at';
+      'read_minutes, published, published_at, created_at, file_path, file_name, file_size_bytes';
 
   String get _uid {
     final id = _db.auth.currentUser?.id;
@@ -121,6 +128,32 @@ class LearningRepository {
         await _db.storage.from(bucket).uploadBinary(path, bytes, fileOptions: FileOptions(contentType: type));
         return _db.storage.from(bucket).getPublicUrl(path);
       });
+
+  /// Uploads a PDF to the private bucket and returns its storage path.
+  Future<String> uploadPdf(Uint8List bytes, String fileName) => guard(() async {
+        final problem = validatePdf(fileName: fileName, sizeBytes: bytes.lengthInBytes);
+        if (problem != null) throw AppFailure(problem, kind: FailureKind.validation);
+        final path = 'resources/${DateTime.now().millisecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}.pdf';
+        await _db.storage.from(filesBucket).uploadBinary(
+              path,
+              bytes,
+              fileOptions: const FileOptions(contentType: 'application/pdf'),
+            );
+        return path;
+      });
+
+  /// A short-lived link to a PDF. Storage refuses it unless the caller may
+  /// read the file (published resource, active account, or content manager).
+  Future<String> signedPdfUrl(String path) =>
+      guard(() => _db.storage.from(filesBucket).createSignedUrl(path, signedUrlSeconds));
+
+  /// Removes a PDF from storage. Best effort: a leftover file must never
+  /// block saving or deleting a resource.
+  Future<void> deleteFile(String path) async {
+    try {
+      await _db.storage.from(filesBucket).remove([path]);
+    } catch (_) {}
+  }
 }
 
 final learningRepositoryProvider = Provider<LearningRepository>(

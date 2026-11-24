@@ -1,9 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gmi_mindspace/core/utils/failure.dart';
 import 'package:gmi_mindspace/features/counselling/data/counselling_repository.dart';
 import 'package:gmi_mindspace/features/counselling/domain/appointment.dart';
 import 'package:gmi_mindspace/features/journal/data/journal_repository.dart';
 import 'package:gmi_mindspace/features/journal/domain/journal_entry.dart';
+import 'package:gmi_mindspace/features/learning_hub/data/learning_repository.dart';
+import 'package:gmi_mindspace/features/learning_hub/domain/learning_resource.dart';
 import 'package:gmi_mindspace/features/mood_checkin/data/mood_repository.dart';
 import 'package:gmi_mindspace/features/mood_checkin/domain/mood.dart';
 import 'package:gmi_mindspace/features/wellbeing_activities/data/programme_repository.dart';
@@ -103,4 +107,41 @@ class FakeProgrammeRepository extends Fake implements ProgrammeRepository {
   @override
   Future<void> submitFeedback({required String programmeId, required int rating, String? comment, bool anonymous = false}) async =>
       feedback.add((programmeId, rating, comment, anonymous));
+}
+
+class FakeLearningRepository extends Fake implements LearningRepository {
+  final List<String> uploadedNames = [];
+  final List<String> deletedFiles = [];
+  final List<String> signedUrlRequests = [];
+  final List<ResourceDraft> created = [];
+  final List<(String, ResourceDraft)> updated = [];
+  final List<String> deletedResources = [];
+  int _uploads = 0;
+
+  @override
+  Future<String> uploadPdf(Uint8List bytes, String fileName) async {
+    uploadedNames.add(fileName);
+    return 'resources/upload-${++_uploads}.pdf';
+  }
+
+  @override
+  Future<void> deleteFile(String path) async => deletedFiles.add(path);
+
+  @override
+  Future<String> signedPdfUrl(String path) async {
+    signedUrlRequests.add(path);
+    return 'https://storage.example.test/signed/${path.split('/').last}?token=t';
+  }
+
+  @override
+  Future<void> create(ResourceDraft d) async => created.add(d);
+
+  @override
+  Future<void> update(String id, ResourceDraft d) async => updated.add((id, d));
+
+  @override
+  Future<void> delete(String id) async => deletedResources.add(id);
+
+  @override
+  Future<void> recordView(String resourceId) async {}
 }

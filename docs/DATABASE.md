@@ -2,7 +2,7 @@
 
 Supabase (PostgreSQL) with Row Level Security (RLS) on **every** table. The app talks to the
 database only with the publishable key, so RLS and column grants are what keep data private.
-Schema source of truth: `supabase/migrations/` (15 files, applied in filename order).
+Schema source of truth: `supabase/migrations/` (16 files, applied in filename order).
 This document was checked against the live `gmi-mindspace-dev` project on 2026-11-24.
 
 ---
@@ -40,6 +40,7 @@ This document was checked against the live `gmi-mindspace-dev` project on 2026-1
 | 013 | `resource_views_upsert` | Upsert support for recently viewed |
 | 014 | `fk_indexes` | Indexes on foreign keys |
 | 015 | `counsellor_signup` | `profiles.staff_id`, trigger promoting verified `@gmi.edu.my` counsellor sign-ups |
+| 016 | `learning_files` | PDF attachments: `resources.file_path/file_name/file_size_bytes`, private `learning-files` bucket and its policies |
 
 ## 3. Tables
 
@@ -53,7 +54,7 @@ This document was checked against the live `gmi-mindspace-dev` project on 2026-1
 | `counsellor_availability` | Bookable time slots | `starts_at`, `ends_at`, `location`, `is_active` | Counsellor manages own; overlapping slots blocked |
 | `appointments` | Counselling appointments | `student_id`, `counsellor_id`, `appointment_type`, `status`, `starts_at`, `student_reason`, `status_reason` | Student reads own · assigned counsellor reads · writes only via functions. Exclusion constraints prevent double booking. |
 | `appointment_notes` | Counsellor's private notes | `appointment_id`, `note` | Author counsellor only |
-| `resources` | Learning Hub content | `title`, `category`, `format`, `content`, `media_url`, `published` | Active users read published · content managers manage |
+| `resources` | Learning Hub content | `title`, `category`, `format`, `content`, `media_url`, `published`, `file_path`, `file_name`, `file_size_bytes` (optional PDF) | Active users read published · content managers manage. A Download needs a link **or** a PDF; a video needs a link. |
 | `resource_bookmarks` | Saved resources | `user_id`, `resource_id` | Owner only |
 | `resource_views` | Recently viewed | `user_id`, `resource_id`, `viewed_at` | Owner only |
 | `programmes` | Well-being activities | `title`, `mode`, `location`, `online_url`, `starts_at`, `capacity`, `status` | Active users read non-drafts · counsellors manage |
@@ -113,11 +114,21 @@ role helpers `private.is_student/is_counsellor/is_admin/current_app_role`.
 ## 7. Testing the database
 
 `bash supabase/tests/run_local.sh` creates a throwaway PostgreSQL 16 server, applies a local shim
-of Supabase's `auth`/`storage` schemas plus every migration, and runs 78 checks with fictional
+of Supabase's `auth`/`storage` schemas plus every migration, and runs 90 checks with fictional
 accounts. **Never run `supabase_shim.sql` against a real project.** Results: see
 [TESTING_REPORT.md](TESTING_REPORT.md).
 
-## 8. Backups and retention
+## 8. Storage buckets
+
+| Bucket | Public? | Contents | Limits | Who can read | Who can write |
+|---|---|---|---|---|---|
+| `learning-media` | Yes (public URLs) | Learning Hub / programme cover images | 5 MB, JPEG / PNG / WebP | Anyone with the URL | Content managers |
+| `learning-files` | **No** (private) | Learning Hub PDF materials (`resources/<id>.pdf`) | 20 MB, PDF only | Active users, **only** for files of published resources (via one-hour signed URLs); content managers: all | Content managers |
+
+Unpublishing a resource immediately stops students getting new links to its PDF. A link already
+handed out stays valid until it expires (at most one hour).
+
+## 9. Backups and retention
 
 - Free-plan Supabase projects have **no point-in-time recovery**; daily backups depend on the plan.
 - A data-retention policy (how long mood and journal entries are kept, and deletion on request)

@@ -11,14 +11,16 @@ Fictional accounts only (`mindspace.student.a@example.test`, `mindspace.student.
 | Suite | Where | Result |
 |---|---|---|
 | Static analysis (`flutter analyze`) | Linux laptop | **Passed** – no issues |
-| Unit tests (`flutter test test/unit`) | Linux laptop | **Passed** – 39 / 39 |
-| Widget tests (`flutter test test/widget`) | Linux laptop | **Passed** – 74 / 74 |
-| Database security, local (`supabase/tests/run_local.sh`) | PostgreSQL 16 on the laptop | **Passed** – 78 / 78 checks |
+| Unit tests (`flutter test test/unit`) | Linux laptop | **Passed** – 46 / 46 |
+| Widget tests (`flutter test test/widget`) | Linux laptop | **Passed** – 84 / 84 |
+| Database security, local (`supabase/tests/run_local.sh`) | PostgreSQL 16 on the laptop | **Passed** – 90 / 90 checks |
 | Workflow tests, in-memory data (`integration_test/app_flow_test.dart`) | Android emulator | **Passed** – 3 / 3 |
 | **Live smoke test** against the dev database (`integration_test/live_smoke_test.dart`) | Android emulator ↔ `gmi-mindspace-dev` | **Passed** – 1 / 1 (covers login, navigation, all six student modules, sign-out, counsellor login) |
 | **Live security test** (`integration_test/supabase_security_test.dart`) | Android emulator ↔ `gmi-mindspace-dev` | **Passed** – 6 / 6 |
 | Signed release APK: session persistence and offline behaviour (manual, adb) | Android emulator | **Passed** – see §4 |
-| Physical Android phone | – | **Not run** (no phone connected) |
+| **Learning Hub PDFs**, live storage checks (scratchpad script, REST API) | `gmi-mindspace-dev` | **Passed** – 12 / 12, see §4b |
+| Learning Hub PDFs in the release APK (manual, adb) | Android emulator | **Passed** – see §4b |
+| Physical Android phone | OPPO CPH2739, Android 16 | **Partly run** – release APK installed and opened, live sign-in and profile load by the owner; checklist §5 not done |
 | iOS simulator / physical iPhone | – | **Not run** (needs macOS + Xcode) |
 | TalkBack / VoiceOver walkthrough | – | **Not run** |
 
@@ -74,6 +76,27 @@ Screenshots in [`docs/screenshots/`](screenshots/).
 | 6 | Network off while signed in, open My Journal | Screen stays usable; list area shows "No connection" + Try again | **Passed** (`05_offline_in_session.png`) |
 | 7 | Signed out, network off, sign in | "You seem to be offline…" message on the login form | **Passed** (`06_offline_login.png`) |
 
+## 4b. Learning Hub PDF materials (2026-11-24)
+
+Live storage checks against `gmi-mindspace-dev` with the fictional accounts (all **passed**):
+counsellor uploads a PDF · counsellor publishes a *Download* resource with the PDF and no link ·
+student gets a signed link · the link downloads the real PDF (`%PDF-` bytes) · no public link
+exists · student cannot upload · bucket refuses a non-PDF content type · bucket refuses a PDF over
+20 MB · counsellor unpublishes · student can no longer get a link · resource and file deleted.
+
+Release APK on the emulator (all **passed**; screenshots `07`–`10`):
+
+| Step | Result |
+|---|---|
+| Student: Learning Hub card shows a **PDF** label | Passed (`07_pdf_card.png`) |
+| Student: **Open PDF** opens the file in the phone's PDF viewer (Chrome) | Passed (`08_pdf_opened.png`) |
+| Counsellor: **Attach PDF** opens the system picker, filtered to PDFs | Passed (`09_pdf_picker.png`) |
+| Counsellor: picked file uploads; editor shows name and size | Passed (`10_pdf_attached.png`) |
+| Counsellor: Save stores path, name and size; file present in storage | Passed (checked in the database) |
+| Counsellor: deleting the resource also deletes its file from storage | Passed (checked in the database) |
+
+All test resources and files were removed afterwards (0 left in the bucket).
+
 ## 5. Manual device checklist
 
 To be completed on each **physical** Android phone and on iOS (simulator + iPhone). Status for
@@ -86,7 +109,8 @@ all rows: **Not run**.
 - [ ] Journal: create, edit, search, delete
 - [ ] Self-care: breathing, grounding, gratitude
 - [ ] Request an appointment (counsellor must first add availability); cancel it
-- [ ] Learning Hub: open an article, bookmark, recently viewed
+- [ ] Learning Hub: open an article, bookmark, recently viewed, **Open PDF**
+- [ ] Counsellor: attach a PDF from the phone's files, publish, open it as a student
 - [ ] Activities: register, cancel, feedback after start
 - [ ] Get Help Now: each phone number opens the dialler
 - [ ] Close and reopen: still signed in

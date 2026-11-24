@@ -17,7 +17,7 @@ Status on 2026-11-24. Severity: **High** = must be fixed before any real student
 
 | # | Issue | Detail |
 |---|---|---|
-| M1 | Not tested on a physical Android phone | All Android testing so far ran on the emulator (`Medium_Phone`, Android 17 / API 37). Older Android versions (minimum supported: 7.0) and manufacturer skins (Samsung, Xiaomi) are untested. |
+| M1 | Barely tested on physical Android phones | Automated testing ran on the emulator (`Medium_Phone`, API 37). On one real phone (OPPO CPH2739, Android 16) the release APK installed, opened and signed in; the full device checklist has not been done. Older Android versions (minimum supported: 7.0) and other manufacturers (Samsung, Xiaomi) are untested. |
 | M2 | iOS never built or run | Configured on Linux; needs a Mac with Xcode for the first build, simulator and iPhone test. |
 | M3 | Accepted risk: any `@gmi.edu.my` mailbox can become a counsellor | Decided by the project owner. Every promotion is audited; admins can demote / deactivate. |
 | M4 | Leaked-password protection off | Supabase Auth ▸ Password security. One click in the dashboard. |
@@ -36,3 +36,5 @@ Status on 2026-11-24. Severity: **High** = must be fixed before any real student
 | L4 | APK size | Universal APK is about 63 MB. Split-per-ABI APKs (~25 MB each) are possible but make sideloading harder. |
 | L5 | Sample content in the dev database | 5 Learning Hub resources and 3 programmes from `supabase/seed/seed.sql`. Review or replace before real use. |
 | L6 | Push notifications (FCM) not configured | Reminders work as local notifications and in-app notifications; remote push is optional and not set up. |
+| L7 | PDF links last up to one hour | A student who already opened a PDF can share the signed link for up to an hour, even after the resource is unpublished. New links stop immediately. |
+| L8 | Possible leftover PDFs | Cleanup of replaced / removed / unsaved PDFs is best effort: if the app is killed or offline at that moment, a file can stay in the `learning-files` bucket (it is private and unreferenced, so students cannot open it). |

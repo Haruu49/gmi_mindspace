@@ -65,6 +65,19 @@ after they register (see the note in KNOWN_ISSUES.md).
 If an administrator gave you content permission: create, edit and publish articles, videos,
 infographics and FAQs, with an optional image from your photo library.
 
+**Sharing a PDF with all students** (worksheets, guides, slides saved as PDF):
+1. Content ▸ **New resource** (or open an existing one).
+2. Fill in the title and description. For a pure handout, choose the format **Download**; it then
+   needs no link and no long text.
+3. Under *PDF for students* tap **Attach PDF** and choose the file (PDF only, up to 20 MB).
+   The file name and size appear; **Replace PDF** swaps it, ✕ removes it.
+4. Switch **Published** on and tap **Save**. Students see a **PDF** label on the card and an
+   **Open PDF** button on the resource.
+
+Notes: one PDF per resource. Drafts stay hidden: students cannot open a draft's PDF. Replacing or
+removing a PDF, or deleting the resource, also deletes the old file. Share only material you have
+the right to share, and nothing about individual students.
+
 ### Feedback & Reports
 Aggregated numbers only (appointment counts, programme participation). No individual mood or
 journal data is ever included.

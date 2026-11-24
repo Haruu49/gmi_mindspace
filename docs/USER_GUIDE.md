@@ -70,6 +70,8 @@ Tapping the tab you are already on takes you back to its first screen.
 - Home ▸ **Learning Hub**: articles, infographics, videos and FAQs by topic (stress, anxiety,
   sleep, relationships, academic burnout and more).
 - Search, **bookmark** resources, and find them again under *Recently viewed*.
+- Resources marked **PDF** have a worksheet or handout from the Counselling Unit: tap
+  **Open PDF** to read, save or print it in your phone's PDF viewer.
 
 ### Well-being Activities
 - Home ▸ **Well-being Activities**: workshops and programmes on a calendar.

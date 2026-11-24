@@ -177,7 +177,7 @@ an app record in App Store Connect; creating that record and uploading a TestFli
 
 ## 4. Supabase checklist for each environment
 
-- [ ] All migrations applied in order (`supabase db push`), including `015_counsellor_signup`.
+- [ ] All migrations applied in order (`supabase db push`), including `015_counsellor_signup` and `016_learning_files`.
 - [ ] Authentication ▸ URL configuration: `my.edu.gmi.mindspace://auth-callback` in redirect URLs.
 - [ ] Authentication ▸ Providers ▸ Email: *Confirm email* **on**.
 - [ ] Authentication ▸ Email templates ▸ Confirm signup: contains `{{ .Token }}` **and** `{{ .ConfirmationURL }}`.

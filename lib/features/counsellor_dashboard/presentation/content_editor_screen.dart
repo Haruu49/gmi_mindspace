@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../learning_hub/data/learning_repository.dart';
+import '../../learning_hub/data/pdf_picker.dart';
 import '../../learning_hub/domain/learning_resource.dart';
 
 /// Create (resourceId == null) or edit a Learning Hub resource.
@@ -53,14 +54,78 @@ class _EditorState extends ConsumerState<_Editor> {
   bool _saving = false;
   bool _uploading = false;
 
+  // Attached PDF. The original is deleted from storage only after a
+  // successful save that replaced or removed it.
+  late final String? _originalFilePath = widget.existing?.filePath;
+  late String? _filePath = widget.existing?.filePath;
+  late String? _fileName = widget.existing?.fileName;
+  late int? _fileSize = widget.existing?.fileSizeBytes;
+  bool _attaching = false;
+  bool _saved = false;
+  late final LearningRepository _repoForCleanup;
+
   LearningRepository get _repo => ref.read(learningRepositoryProvider);
+
+  /// A PDF uploaded in this session that is not saved on the resource yet.
+  bool get _hasUnsavedUpload => _filePath != null && _filePath != _originalFilePath;
+
+  /// Video always needs a link; a Download needs a link or a PDF.
+  bool get _linkRequired =>
+      _format == ResourceFormat.video || (_format == ResourceFormat.download && _filePath == null);
+
+  @override
+  void initState() {
+    super.initState();
+    _repoForCleanup = ref.read(learningRepositoryProvider);
+  }
 
   @override
   void dispose() {
+    // Leaving without saving: do not keep an orphan upload in storage.
+    if (!_saved && _hasUnsavedUpload) _repoForCleanup.deleteFile(_filePath!);
     for (final c in [_title, _description, _content, _media, _minutes]) {
       c.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _attachPdf() async {
+    try {
+      final picked = await ref.read(pdfPickerProvider)();
+      if (picked == null) return;
+      final problem = validatePdf(fileName: picked.name, sizeBytes: picked.sizeBytes);
+      if (problem != null) {
+        if (mounted) showAppSnack(context, problem, isError: true);
+        return;
+      }
+      setState(() => _attaching = true);
+      final bytes = await picked.readBytes();
+      final path = await _repo.uploadPdf(bytes, picked.name);
+      if (_hasUnsavedUpload) await _repo.deleteFile(_filePath!);
+      if (!mounted) {
+        await _repoForCleanup.deleteFile(path);
+        return;
+      }
+      setState(() {
+        _filePath = path;
+        _fileName = picked.name;
+        _fileSize = bytes.lengthInBytes;
+      });
+    } catch (e) {
+      if (mounted) showErrorSnack(context, e);
+    } finally {
+      if (mounted) setState(() => _attaching = false);
+    }
+  }
+
+  Future<void> _removePdf() async {
+    if (_hasUnsavedUpload) await _repo.deleteFile(_filePath!);
+    if (!mounted) return;
+    setState(() {
+      _filePath = null;
+      _fileName = null;
+      _fileSize = null;
+    });
   }
 
   Future<void> _pickImage() async {
@@ -92,6 +157,9 @@ class _EditorState extends ConsumerState<_Editor> {
       imageUrl: _imageUrl,
       mediaUrl: _media.text,
       readMinutes: int.tryParse(_minutes.text.trim()),
+      filePath: _filePath,
+      fileName: _fileName,
+      fileSizeBytes: _fileSize,
     );
     setState(() => _saving = true);
     try {
@@ -100,6 +168,11 @@ class _EditorState extends ConsumerState<_Editor> {
       } else {
         await _repo.update(widget.existing!.id, draft);
         ref.invalidate(resourceDetailProvider(widget.existing!.id));
+      }
+      _saved = true;
+      // The old PDF was replaced or removed: delete it from storage.
+      if (_originalFilePath != null && _originalFilePath != _filePath) {
+        await _repo.deleteFile(_originalFilePath);
       }
       ref.invalidate(managedResourcesProvider);
       if (!mounted) return;
@@ -118,6 +191,7 @@ class _EditorState extends ConsumerState<_Editor> {
     if (!ok) return;
     try {
       await _repo.delete(widget.existing!.id);
+      if (_originalFilePath != null) await _repo.deleteFile(_originalFilePath);
       ref.invalidate(managedResourcesProvider);
       if (mounted) context.pop();
     } catch (e) {
@@ -140,6 +214,7 @@ class _EditorState extends ConsumerState<_Editor> {
         child: PageBody(
           children: [
             AppTextField(
+              key: const Key('content_title'),
               controller: _title,
               label: 'Title',
               maxLength: 150,
@@ -148,6 +223,7 @@ class _EditorState extends ConsumerState<_Editor> {
             ),
             AppSpacing.gapSm,
             AppTextField(
+              key: const Key('content_description'),
               controller: _description,
               label: 'Short description',
               maxLines: 3,
@@ -172,6 +248,7 @@ class _EditorState extends ConsumerState<_Editor> {
             ),
             AppSpacing.gapMd,
             AppTextField(
+              key: const Key('content_body'),
               controller: _content,
               label: _format == ResourceFormat.faq ? 'Questions & answers' : 'Content',
               hint: _format == ResourceFormat.faq ? 'Q: …\nA: …' : null,
@@ -187,10 +264,10 @@ class _EditorState extends ConsumerState<_Editor> {
             AppSpacing.gapSm,
             AppTextField(
               controller: _media,
-              label: _format.needsLink ? 'Approved media link (https)' : 'Media link (optional)',
+              label: _linkRequired ? 'Approved media link (https)' : 'Media link (optional)',
               keyboardType: TextInputType.url,
               validator: (v) {
-                final base = Validators.url(v, required: _format.needsLink);
+                final base = Validators.url(v, required: _linkRequired);
                 if (base != null) return base;
                 if ((v?.trim().isNotEmpty ?? false) && !v!.trim().startsWith('https://')) {
                   return 'Please use a secure https:// link.';
@@ -229,6 +306,43 @@ class _EditorState extends ConsumerState<_Editor> {
               ],
             ),
             Text('JPG, PNG or WebP, up to 5 MB. Use only images you have rights to.', style: context.text.bodySmall),
+            const SectionHeader(title: 'PDF for students'),
+            if (_filePath != null)
+              AppCard(
+                child: Row(
+                  children: [
+                    Icon(Icons.picture_as_pdf_outlined, color: context.colors.error),
+                    AppSpacing.gapSm,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(_fileName ?? 'PDF', style: context.text.titleSmall),
+                          Text(
+                            '${formatFileSize(_fileSize ?? 0)} · students open it from this resource',
+                            style: context.text.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      key: const Key('content_remove_pdf'),
+                      tooltip: 'Remove PDF',
+                      onPressed: _attaching || _saving ? null : _removePdf,
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+              ),
+            AppSpacing.gapSm,
+            AppButton.outline(
+              key: const Key('content_attach_pdf'),
+              label: _filePath == null ? 'Attach PDF' : 'Replace PDF',
+              icon: Icons.upload_file_rounded,
+              isLoading: _attaching,
+              onPressed: _saving ? null : _attachPdf,
+            ),
+            Text('PDF only, up to 20 MB. Share only materials you have the rights to.', style: context.text.bodySmall),
             AppSpacing.gapSm,
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -238,7 +352,12 @@ class _EditorState extends ConsumerState<_Editor> {
               onChanged: (v) => setState(() => _published = v),
             ),
             AppSpacing.gapLg,
-            AppButton(label: 'Save', isLoading: _saving, onPressed: _uploading ? null : _save),
+            AppButton(
+              key: const Key('content_save'),
+              label: 'Save',
+              isLoading: _saving,
+              onPressed: _uploading || _attaching ? null : _save,
+            ),
           ],
         ),
       ),

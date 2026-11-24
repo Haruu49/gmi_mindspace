@@ -42,7 +42,7 @@ built with Flutter (Android + iOS), Riverpod, GoRouter and Supabase (PostgreSQL 
 | Role | Modules |
 |---|---|
 | **Student** | Dashboard · Mood Check-in (history, weekly/monthly charts, reflection prompts, optional summary sharing) · My Journal (CRUD, prompts, gratitude, search) · Self-care Corner (breathing animation, 5-4-3-2-1 grounding, gratitude, 7 categories) · Counselling appointments (request, status, cancel, reschedule) · Learning Hub (browse, search, bookmarks, recently viewed) · Well-being Activities (calendar, register, cancel, feedback) · Profile · Notifications · Get Help Now |
-| **Counsellor** | Self sign-up with Staff ID and an emailed 6-digit code · Dashboard overview · Appointment management (search, filters, confirm / reject with explanation / reschedule / complete, private notes) · Availability · Programme management (create, publish, registrations, attendance, feedback) · Learning Hub content management (with image upload) · Feedback & Reports (aggregated only) |
+| **Counsellor** | Self sign-up with Staff ID and an emailed 6-digit code · Dashboard overview · Appointment management (search, filters, confirm / reject with explanation / reschedule / complete, private notes) · Availability · Programme management (create, publish, registrations, attendance, feedback) · Learning Hub content management (cover images and **PDF materials for all students**) · Feedback & Reports (aggregated only) |
 | **Administrator** | System health · User accounts (assign roles, activate/deactivate, content permission) · Audit log · App settings |
 
 Built-in safeguards: no diagnosis or risk scoring anywhere, an always-reachable **Get Help Now** screen
@@ -117,7 +117,7 @@ lib/
     models/                 UserProfile, AppRole
     widgets/                Get Help Now, month calendar, avatar, setup screen
 supabase/
-  migrations/               15 ordered SQL migrations (schema, RLS, functions, grants)
+  migrations/               16 ordered SQL migrations (schema, RLS, functions, grants)
   seed/seed.sql             Sample learning content + draft programmes (no users, no student data)
   functions/send-push/      Prepared FCM Edge Function (not deployed)
   tests/                    Local RLS test suite (67 checks) + runner
@@ -165,8 +165,8 @@ Without `env/dev.json` the app still starts and shows a *Setup needed* screen, w
 ## Supabase setup
 
 **Development project (already set up, 2026-11-23):** `gmi-mindspace-dev`
-(ref `ggxjsrnhzlpeqpwecqzr`, region Singapore, free plan). All 15 migrations and the seed are
-applied (`015` on 2026-11-24). Three fictional test accounts exist (two students, one counsellor; credentials in the git-ignored `env/test_accounts.json`); `env/dev.json` on this laptop points to it. Verified live: 19 tables with RLS, 66 policies,
+(ref `ggxjsrnhzlpeqpwecqzr`, region Singapore, free plan). All 16 migrations and the seed are
+applied (`015` and `016` on 2026-11-24). Three fictional test accounts exist (two students, one counsellor; credentials in the git-ignored `env/test_accounts.json`); `env/dev.json` on this laptop points to it. Verified live: 19 tables with RLS, 66 policies,
 reminder cron job scheduled, realtime on `notifications`, and every table / admin function returns
 **401 permission denied** to signed-out requests. Supabase's security advisor lists 20
 "SECURITY DEFINER function executable by authenticated" warnings – these are the intended app
@@ -263,10 +263,10 @@ Groups smaller than 5 students are suppressed. There are no diagnostic, predicti
 | Suite | Command | Result (2026-11-23) |
 |---|---|---|
 | Static analysis | `flutter analyze` | No issues |
-| Unit tests | `flutter test test/unit` | 39 passed: validators, role routing, mood statistics, error mapping, content rules |
-| Widget tests | `flutter test test/widget` | 74 passed: login/registration and counsellor sign-up validation, emailed-code step, show/hide password, role routing, logout, session expiry, mood check-in, journal create + delete confirmation, appointment request + double-booking message, programme registration, feedback, breathing start/stop, cross-tab navigation |
+| Unit tests | `flutter test test/unit` | 46 passed: validators, PDF file checks, role routing, mood statistics, error mapping, content rules |
+| Widget tests | `flutter test test/widget` | 84 passed: login/registration and counsellor sign-up validation, PDF attach / replace / remove / open, emailed-code step, show/hide password, role routing, logout, session expiry, mood check-in, journal create + delete confirmation, appointment request + double-booking message, programme registration, feedback, breathing start/stop, cross-tab navigation |
 | UI / responsive | included above | 7 device sizes (320 × 568 → iPad, plus landscape), keyboard open, 130 % text, dark mode, 48 dp tap targets, text contrast |
-| Database RLS | `bash supabase/tests/run_local.sh` | **78 / 78 checks passed** with fictional accounts (students, counsellors, admins and counsellor sign-ups) on PostgreSQL 16 |
+| Database RLS | `bash supabase/tests/run_local.sh` | **90 / 90 checks passed** with fictional accounts (students, counsellors, admins, counsellor sign-ups, PDF storage access) on PostgreSQL 16 |
 | Device workflows | `flutter test integration_test/app_flow_test.dart -d <device>` | **3 / 3 passed on the Android emulator** (Medium_Phone, emulator-5554): student login → mood check-in → journal → logout; counsellor routing; session expiry. Uses in-memory data, not a live server. |
 | Live smoke test | `integration_test/live_smoke_test.dart` | **1 / 1 passed (2026-11-24)** on the emulator against `gmi-mindspace-dev`: login, navigation, all six student modules, data written and read back, sign-out, counsellor login |
 | Live Supabase security | `integration_test/supabase_security_test.dart` | **6 / 6 passed (2026-11-24)** with fictional accounts on `gmi-mindspace-dev` |
@@ -285,7 +285,7 @@ The local suite uses `supabase/tests/supabase_shim.sql`, which recreates the min
 
 ## Readiness
 
-**Verified:** static analysis, 113 Flutter tests, 78 database security checks, migrations apply cleanly
+**Verified:** static analysis, 130 Flutter tests, 90 database security checks, migrations apply cleanly
 on PostgreSQL 16 and on the Supabase dev project (signed-out access denied), a **signed release APK**
 (`my.edu.gmi.mindspace`, 1.0.0+1) builds and runs, 3 integration workflows pass on the Android emulator,
 and the live smoke test (6 student modules) and live security test (6 checks) pass against the dev

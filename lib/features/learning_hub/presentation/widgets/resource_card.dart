@@ -69,6 +69,8 @@ class ResourceCard extends StatelessWidget {
                     runSpacing: AppSpacing.xxs,
                     children: [
                       StatusChip(label: r.format.label, color: r.category.color, icon: r.format.icon),
+                      if (r.hasFile)
+                        StatusChip(label: 'PDF', color: context.colors.error, icon: Icons.picture_as_pdf_outlined),
                       if (r.readMinutes != null && !compact)
                         StatusChip(label: '${r.readMinutes} min', color: context.colors.primary),
                     ],

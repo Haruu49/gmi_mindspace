@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../core/widgets/widgets.dart';
 import '../data/learning_repository.dart';
+import '../data/pdf_picker.dart';
 import '../domain/learning_resource.dart';
 import 'widgets/resource_card.dart';
 
@@ -20,6 +21,7 @@ class ResourceDetailScreen extends ConsumerStatefulWidget {
 
 class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
   bool _toggling = false;
+  bool _openingPdf = false;
 
   @override
   void initState() {
@@ -50,6 +52,21 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
     if (uri == null || !uri.isScheme('https')) return;
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && mounted) showAppSnack(context, 'Could not open the link.', isError: true);
+  }
+
+  /// Gets a one-hour signed link (storage checks the student may read it)
+  /// and opens it in the phone's PDF viewer.
+  Future<void> _openPdf(String path) async {
+    setState(() => _openingPdf = true);
+    try {
+      final url = await ref.read(learningRepositoryProvider).signedPdfUrl(path);
+      final ok = await ref.read(pdfOpenerProvider)(Uri.parse(url));
+      if (!ok && mounted) showAppSnack(context, 'Could not open the PDF.', isError: true);
+    } catch (e) {
+      if (mounted) showErrorSnack(context, e);
+    } finally {
+      if (mounted) setState(() => _openingPdf = false);
+    }
   }
 
   @override
@@ -93,6 +110,21 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
             ],
             const Divider(height: AppSpacing.xl),
             if (r.content != null) SelectableText(r.content!, style: context.text.bodyLarge?.copyWith(height: 1.65)),
+            if (r.hasFile) ...[
+              AppSpacing.gapLg,
+              Text(
+                '${r.fileName ?? 'PDF'} · ${formatFileSize(r.fileSizeBytes ?? 0)}',
+                style: context.text.bodySmall,
+              ),
+              AppSpacing.gapXs,
+              AppButton(
+                key: const Key('resource_open_pdf'),
+                label: 'Open PDF',
+                icon: Icons.picture_as_pdf_outlined,
+                isLoading: _openingPdf,
+                onPressed: () => _openPdf(r.filePath!),
+              ),
+            ],
             if (r.mediaUrl != null) ...[
               AppSpacing.gapLg,
               AppButton(

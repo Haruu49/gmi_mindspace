@@ -45,6 +45,25 @@ enum ResourceFormat {
       ResourceFormat.values.firstWhere((f) => f.dbValue == v, orElse: () => ResourceFormat.article);
 }
 
+/// Largest PDF a counsellor may attach (mirrors the storage bucket limit).
+const int maxPdfBytes = 20 * 1024 * 1024;
+
+/// Checks a picked file before upload. Returns null when it is acceptable.
+String? validatePdf({required String fileName, required int sizeBytes}) {
+  final name = fileName.trim().toLowerCase();
+  if (name.length <= 4 || !name.endsWith('.pdf')) return 'Please choose a PDF file.';
+  if (sizeBytes <= 0) return 'This file is empty.';
+  if (sizeBytes > maxPdfBytes) return 'PDFs must be 20 MB or smaller.';
+  return null;
+}
+
+/// Human-readable size, e.g. "850 KB" or "1.2 MB".
+String formatFileSize(int bytes) {
+  const mb = 1024 * 1024;
+  if (bytes < mb) return '${(bytes / 1024).ceil()} KB';
+  return '${(bytes / mb).toStringAsFixed(1)} MB';
+}
+
 class LearningResource {
   const LearningResource({
     required this.id,
@@ -59,6 +78,9 @@ class LearningResource {
     this.mediaUrl,
     this.readMinutes,
     this.publishedAt,
+    this.filePath,
+    this.fileName,
+    this.fileSizeBytes,
   });
 
   final String id;
@@ -74,6 +96,13 @@ class LearningResource {
   final int? readMinutes;
   final DateTime? publishedAt;
 
+  /// Attached PDF (path inside the private `learning-files` bucket).
+  final String? filePath;
+  final String? fileName;
+  final int? fileSizeBytes;
+
+  bool get hasFile => filePath != null;
+
   factory LearningResource.fromJson(Map<String, dynamic> j) => LearningResource(
         id: j['id'] as String,
         title: j['title'] as String,
@@ -87,6 +116,9 @@ class LearningResource {
         mediaUrl: j['media_url'] as String?,
         readMinutes: (j['read_minutes'] as num?)?.toInt(),
         publishedAt: j['published_at'] == null ? null : DateTime.parse(j['published_at'] as String),
+        filePath: j['file_path'] as String?,
+        fileName: j['file_name'] as String?,
+        fileSizeBytes: (j['file_size_bytes'] as num?)?.toInt(),
       );
 }
 
@@ -101,6 +133,9 @@ class ResourceDraft {
     this.imageUrl,
     this.mediaUrl,
     this.readMinutes,
+    this.filePath,
+    this.fileName,
+    this.fileSizeBytes,
   });
 
   final String title;
@@ -112,6 +147,9 @@ class ResourceDraft {
   final String? imageUrl;
   final String? mediaUrl;
   final int? readMinutes;
+  final String? filePath;
+  final String? fileName;
+  final int? fileSizeBytes;
 
   Map<String, dynamic> toRow() => {
         'title': title.trim(),
@@ -123,5 +161,9 @@ class ResourceDraft {
         'image_url': imageUrl,
         'media_url': (mediaUrl?.trim().isEmpty ?? true) ? null : mediaUrl!.trim(),
         'read_minutes': readMinutes,
+        // Always written, so removing a PDF clears all three columns.
+        'file_path': filePath,
+        'file_name': filePath == null ? null : fileName,
+        'file_size_bytes': filePath == null ? null : fileSizeBytes,
       };
 }
