@@ -24,7 +24,7 @@ for f in "$ROOT"/migrations/*.sql; do
   "${PSQL[@]}" -f "$f" 2>&1 | grep -v NOTICE || true
 done
 
-OUT="$("${PSQL[@]}" -f "$ROOT/tests/rls_01_setup_and_privacy.sql" -f "$ROOT/tests/rls_02_roles_and_workflows.sql" 2>&1 || true)"
+OUT="$("${PSQL[@]}" -f "$ROOT/tests/rls_01_setup_and_privacy.sql" -f "$ROOT/tests/rls_02_roles_and_workflows.sql" -f "$ROOT/tests/rls_03_counsellor_signup.sql" 2>&1 || true)"
 echo "$OUT" | grep -oE "(PASS|FAIL): .*" || true
 PASSED=$(echo "$OUT" | grep -c "PASS:" || true)
 if echo "$OUT" | grep -qE "FAIL:|ERROR:"; then

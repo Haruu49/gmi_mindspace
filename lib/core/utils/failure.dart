@@ -72,6 +72,14 @@ class AppFailure implements Exception {
       return AppFailure('Too many attempts. Please wait a minute and try again.',
           kind: FailureKind.auth, cause: e);
     }
+    // Wrong or expired e-mail code (checked before the session-expiry rule,
+    // because the message also contains "expired").
+    if (msg.contains('token') &&
+        !msg.contains('refresh') &&
+        (msg.contains('expired') || msg.contains('invalid'))) {
+      return AppFailure('That code is not right or has expired. Request a new one.',
+          kind: FailureKind.auth, cause: e);
+    }
     if (msg.contains('jwt') || msg.contains('expired') ||
         msg.contains('refresh token')) {
       return AppFailure('Your session has expired. Please sign in again.',

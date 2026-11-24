@@ -52,6 +52,13 @@ class FakeAuthRepository implements AuthRepository {
   int signOutCalls = 0;
   final List<String> registered = [];
 
+  // Counsellor sign-up (mirrors the database rule: a taken Staff ID stays student).
+  final List<String> counsellorSignups = [];
+  final List<String> resent = [];
+  final Set<String> takenStaffIds = {};
+  String validCode = '123456';
+  final Map<String, (String name, String staffId)> _pendingCounsellors = {};
+
   @override
   Stream<AuthEvent> get events => _events.stream;
 
@@ -78,6 +85,36 @@ class FakeAuthRepository implements AuthRepository {
     registered.add(email);
     return true; // e-mail confirmation required
   }
+
+  @override
+  Future<void> signUpCounsellor({
+    required String fullName,
+    required String staffId,
+    required String email,
+    required String password,
+  }) async {
+    counsellorSignups.add(email.trim().toLowerCase());
+    _pendingCounsellors[email.trim().toLowerCase()] = (fullName.trim(), staffId.trim().toUpperCase());
+  }
+
+  @override
+  Future<void> verifyEmailCode({required String email, required String code}) async {
+    final pending = _pendingCounsellors[email.trim().toLowerCase()];
+    if (pending == null || code.trim() != validCode) {
+      throw const AppFailure('That code is not right or has expired. Request a new one.', kind: FailureKind.auth);
+    }
+    _current = UserProfile(
+      id: 'new-counsellor',
+      fullName: pending.$1,
+      role: takenStaffIds.contains(pending.$2) ? AppRole.student : AppRole.counsellor,
+      isActive: true,
+      email: email.trim().toLowerCase(),
+    );
+    _events.add(AuthEvent.signedIn);
+  }
+
+  @override
+  Future<void> resendEmailCode(String email) async => resent.add(email.trim().toLowerCase());
 
   @override
   Future<void> signOut() async {
@@ -141,12 +178,17 @@ Future<FakeAuthRepository> pumpFullApp(
 }
 
 /// Pumps a single screen inside the app theme.
-Future<void> pumpScreen(WidgetTester tester, Widget screen, {List<Override> overrides = const []}) async {
+Future<void> pumpScreen(
+  WidgetTester tester,
+  Widget screen, {
+  List<Override> overrides = const [],
+  FakeAuthRepository? auth,
+}) async {
   await tester.pumpWidget(
     ProviderScope(
       retry: (_, _) => null,
       overrides: [
-        authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+        authRepositoryProvider.overrideWithValue(auth ?? FakeAuthRepository()),
         ...dataOverrides(),
         ...overrides,
       ],

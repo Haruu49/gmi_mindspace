@@ -178,6 +178,48 @@ class AuthController extends Notifier<SessionState> {
     );
   }
 
+  Future<void> registerCounsellor({
+    required String fullName,
+    required String staffId,
+    required String email,
+    required String password,
+  }) {
+    return _repo.signUpCounsellor(
+      fullName: fullName,
+      staffId: staffId,
+      email: email,
+      password: password,
+    );
+  }
+
+  /// Confirms the e-mailed code. The database turns a verified @gmi.edu.my
+  /// sign-up into a counsellor; if it did not (e.g. the Staff ID is already
+  /// taken) the person is signed out with a clear message.
+  Future<void> verifyCounsellorCode({required String email, required String code}) async {
+    _signingIn = true;
+    try {
+      await _repo.verifyEmailCode(email: email, code: code);
+      final profile = await _repo.fetchCurrentProfile();
+      if (profile == null) {
+        throw const AppFailure('We could not load your account. Please try again.');
+      }
+      if (profile.role == AppRole.student) {
+        _userSignedOut = true;
+        await _repo.signOut();
+        throw const AppFailure(
+          'Your email is verified, but counsellor access could not be activated. '
+          'Please contact the GMI Counselling Unit.',
+          kind: FailureKind.permission,
+        );
+      }
+      state = AuthSignedIn(profile);
+    } finally {
+      _signingIn = false;
+    }
+  }
+
+  Future<void> resendCounsellorCode(String email) => _repo.resendEmailCode(email);
+
   Future<void> signOut() async {
     _userSignedOut = true;
     try {

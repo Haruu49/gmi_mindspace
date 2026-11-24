@@ -24,6 +24,22 @@ abstract interface class AuthRepository {
     required String password,
   });
 
+  /// Starts counsellor sign-up. Supabase e-mails a 6-digit code; the
+  /// counsellor role is granted by the database only after the code is
+  /// accepted (see [verifyEmailCode]).
+  Future<void> signUpCounsellor({
+    required String fullName,
+    required String staffId,
+    required String email,
+    required String password,
+  });
+
+  /// Confirms the e-mailed 6-digit code and signs the user in.
+  Future<void> verifyEmailCode({required String email, required String code});
+
+  /// E-mails a fresh sign-up code.
+  Future<void> resendEmailCode(String email);
+
   Future<void> signOut();
 
   Future<void> sendPasswordReset(String email);

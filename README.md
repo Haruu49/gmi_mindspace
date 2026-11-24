@@ -29,7 +29,7 @@ built with Flutter (Android + iOS), Riverpod, GoRouter and Supabase (PostgreSQL 
 | Role | Modules |
 |---|---|
 | **Student** | Dashboard · Mood Check-in (history, weekly/monthly charts, reflection prompts, optional summary sharing) · My Journal (CRUD, prompts, gratitude, search) · Self-care Corner (breathing animation, 5-4-3-2-1 grounding, gratitude, 7 categories) · Counselling appointments (request, status, cancel, reschedule) · Learning Hub (browse, search, bookmarks, recently viewed) · Well-being Activities (calendar, register, cancel, feedback) · Profile · Notifications · Get Help Now |
-| **Counsellor** | Dashboard overview · Appointment management (search, filters, confirm / reject with explanation / reschedule / complete, private notes) · Availability · Programme management (create, publish, registrations, attendance, feedback) · Learning Hub content management (with image upload) · Feedback & Reports (aggregated only) |
+| **Counsellor** | Self sign-up with Staff ID and an emailed 6-digit code · Dashboard overview · Appointment management (search, filters, confirm / reject with explanation / reschedule / complete, private notes) · Availability · Programme management (create, publish, registrations, attendance, feedback) · Learning Hub content management (with image upload) · Feedback & Reports (aggregated only) |
 | **Administrator** | System health · User accounts (assign roles, activate/deactivate, content permission) · Audit log · App settings |
 
 Built-in safeguards: no diagnosis or risk scoring anywhere, an always-reachable **Get Help Now** screen
@@ -104,7 +104,7 @@ lib/
     models/                 UserProfile, AppRole
     widgets/                Get Help Now, month calendar, avatar, setup screen
 supabase/
-  migrations/               14 ordered SQL migrations (schema, RLS, functions, grants)
+  migrations/               15 ordered SQL migrations (schema, RLS, functions, grants)
   seed/seed.sql             Sample learning content + draft programmes (no users, no student data)
   functions/send-push/      Prepared FCM Edge Function (not deployed)
   tests/                    Local RLS test suite (67 checks) + runner
@@ -151,8 +151,8 @@ Without `env/dev.json` the app still starts and shows a *Setup needed* screen, w
 ## Supabase setup
 
 **Development project (already set up, 2026-11-23):** `gmi-mindspace-dev`
-(ref `ggxjsrnhzlpeqpwecqzr`, region Singapore, free plan). All 14 migrations and the seed are
-applied; `env/dev.json` on this laptop points to it. Verified live: 19 tables with RLS, 66 policies,
+(ref `ggxjsrnhzlpeqpwecqzr`, region Singapore, free plan). The first 14 migrations and the seed are
+applied (migration `015`, counsellor sign-up, is **not applied yet**: run `supabase db push`); `env/dev.json` on this laptop points to it. Verified live: 19 tables with RLS, 66 policies,
 reminder cron job scheduled, realtime on `notifications`, and every table / admin function returns
 **401 permission denied** to signed-out requests. Supabase's security advisor lists 20
 "SECURITY DEFINER function executable by authenticated" warnings – these are the intended app
@@ -171,7 +171,11 @@ Steps below are for setting up **another** project (e.g. production).
 6. **Database ▸ Extensions:** enable `pg_cron`, then re-run migration `008` (or run the `cron.schedule` line from it) for reminders.
 7. Create the first administrator: sign up in the app with a staff e-mail, then in the SQL editor run
    `update public.user_roles set role = 'admin' where user_id = (select id from auth.users where email = '<that e-mail>');`
-8. Counsellors: invite them under **Authentication ▸ Users**, then assign the Counsellor role in the app (**Admin ▸ User accounts**).
+8. **Counsellor sign-up (migration `015`):** counsellors sign up themselves in the app (**Counsellor Login ▸ Sign up**) with full name, Staff ID, a `@gmi.edu.my` email and a password. They receive a 6-digit code by email and become counsellors as soon as they enter it. For this to work:
+   - **Authentication ▸ Email templates ▸ Confirm signup:** include `{{ .Token }}` (the 6-digit code) in the message, and keep `{{ .ConfirmationURL }}` so students still get their link.
+   - **Authentication ▸ SMTP:** configure your own SMTP provider. Supabase's built-in sender is heavily rate-limited and not meant for real users.
+   - Keep *Confirm email* on (step 5). With it off, no code is sent and counsellor sign-up refuses to continue.
+   - Accepted risk: anyone who owns a `@gmi.edu.my` mailbox (for example a lecturer) can self-register as a counsellor. Every promotion is written to the audit log, and administrators can still demote or deactivate accounts in **Admin ▸ User accounts**.
 
 Never put the service-role / secret key in the app or in `env/dev.json`. The app only uses the
 publishable key. That is safe **because** every table is protected by RLS and explicit grants.
@@ -194,7 +198,7 @@ account has no effective role, so every policy denies it immediately.
 | Table | Who can do what | Why |
 |---|---|---|
 | `profiles` | Read own · read counsellor names (for booking) · counsellors read students they have an appointment or programme registration with · admins read all · update own name / student ID / programme only | Basic account info only, with no mood or journal data. Users cannot activate themselves. |
-| `user_roles` | Read own · admins read all · **no client writes** | Roles change only through `admin_set_user_role()`, which refuses self-changes, keeps at least one admin, and writes the audit log. New sign-ups are **always** students; a `role` in sign-up metadata is ignored. |
+| `user_roles` | Read own · admins read all · **no client writes** | Roles change only through `admin_set_user_role()`, which refuses self-changes, keeps at least one admin, and writes the audit log. New sign-ups are students; a `role` in sign-up metadata is ignored. The only other path is a **verified** `@gmi.edu.my` counsellor sign-up (trigger on `email_confirmed_at`, exact domain, valid and unused Staff ID, audited). |
 | `mood_entries` | **Owner only**, all operations | No counsellor or admin policy exists. |
 | `journal_entries` | **Owner only**, all operations | Counsellors and administrators cannot read journals through any API path. |
 | `mood_share_consents` | Student creates / revokes own consent for one named counsellor · that counsellor sees the consent | The counsellor calls `get_shared_mood_summary()`, which returns **counts per mood only** while consent is active, never notes or reasons. Consent expires after 30 days. |
@@ -245,10 +249,10 @@ Groups smaller than 5 students are suppressed. There are no diagnostic, predicti
 | Suite | Command | Result (2026-11-23) |
 |---|---|---|
 | Static analysis | `flutter analyze` | No issues |
-| Unit tests | `flutter test test/unit` | 33 passed: validators, role routing, mood statistics, error mapping, content rules |
-| Widget tests | `flutter test test/widget` | 65 passed: login/registration validation, show/hide password, role routing, logout, session expiry, mood check-in, journal create + delete confirmation, appointment request + double-booking message, programme registration, feedback, breathing start/stop, cross-tab navigation |
+| Unit tests | `flutter test test/unit` | 39 passed: validators, role routing, mood statistics, error mapping, content rules |
+| Widget tests | `flutter test test/widget` | 74 passed: login/registration and counsellor sign-up validation, emailed-code step, show/hide password, role routing, logout, session expiry, mood check-in, journal create + delete confirmation, appointment request + double-booking message, programme registration, feedback, breathing start/stop, cross-tab navigation |
 | UI / responsive | included above | 7 device sizes (320 × 568 → iPad, plus landscape), keyboard open, 130 % text, dark mode, 48 dp tap targets, text contrast |
-| Database RLS | `bash supabase/tests/run_local.sh` | **67 / 67 checks passed** with six fictional accounts (2 students, 2 counsellors, 2 admins) on PostgreSQL 16 |
+| Database RLS | `bash supabase/tests/run_local.sh` | **78 / 78 checks passed** with fictional accounts (students, counsellors, admins and counsellor sign-ups) on PostgreSQL 16 |
 | Device workflows | `flutter test integration_test/app_flow_test.dart -d <device>` | **3 / 3 passed on the Android emulator** (Medium_Phone, emulator-5554): student login → mood check-in → journal → logout; counsellor routing; session expiry. Uses in-memory data, not a live server. |
 | Live Supabase security | `integration_test/supabase_security_test.dart` | Written; **not yet run** (needs a dev project and fictional test accounts) |
 
@@ -265,7 +269,7 @@ The local suite uses `supabase/tests/supabase_shim.sql`, which recreates the min
 
 ## Readiness
 
-**Verified:** static analysis, 98 Flutter tests, 67 database security checks, migrations apply cleanly
+**Verified:** static analysis, 113 Flutter tests, 78 database security checks, migrations apply cleanly
 on PostgreSQL 16 and on the Supabase dev project (signed-out access denied), the Android debug APK builds, and 3 integration workflows pass on the Android emulator.
 
 **Not yet verified, required before any real use:**

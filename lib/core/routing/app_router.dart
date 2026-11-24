@@ -9,6 +9,7 @@ import '../../features/authentication/presentation/auth_controller.dart';
 import '../../features/authentication/presentation/login_screen.dart';
 import '../../features/authentication/presentation/password_screens.dart';
 import '../../features/authentication/presentation/privacy_screen.dart';
+import '../../features/authentication/presentation/counsellor_register_screen.dart';
 import '../../features/authentication/presentation/register_screen.dart';
 import '../../features/authentication/presentation/splash_screen.dart';
 import '../../features/authentication/presentation/welcome_screen.dart';
@@ -67,6 +68,7 @@ final _publicRoutes = <RouteBase>[
   _r(AppRoutes.studentLogin, (_) => const LoginScreen()),
   _r(AppRoutes.counsellorLogin, (_) => const LoginScreen(staffPortal: true)),
   _r(AppRoutes.register, (_) => const RegisterScreen()),
+  _r(AppRoutes.counsellorRegister, (_) => const CounsellorRegisterScreen()),
   _r(AppRoutes.forgotPassword, (_) => const ForgotPasswordScreen()),
   _r(AppRoutes.resetPassword, (_) => const ResetPasswordScreen()),
   _r(AppRoutes.privacy, (_) => const PrivacyScreen()),

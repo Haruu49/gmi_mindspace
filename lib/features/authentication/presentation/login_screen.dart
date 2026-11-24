@@ -130,10 +130,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ],
           )
         else
-          Text(
-            'Counsellor accounts are created and approved by a GMI administrator.',
-            style: context.text.bodySmall,
-            textAlign: TextAlign.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text('New counsellor?', style: context.text.bodyMedium),
+              AppButton.text(
+                key: const Key('counsellor_login_signup'),
+                label: 'Sign up',
+                onPressed: _loading ? null : () => context.pushReplacement(AppRoutes.counsellorRegister),
+              ),
+            ],
           ),
       ],
     );

@@ -31,4 +31,8 @@ abstract final class AppConstants {
   /// E-mail domains allowed to self-register as students. Leave empty to
   /// allow any domain (e.g. during testing).
   static const List<String> studentEmailDomains = <String>[];
+
+  /// The only e-mail domain allowed to sign up as a counsellor. The database
+  /// enforces the same rule; this copy only gives friendlier form errors.
+  static const String counsellorEmailDomain = 'gmi.edu.my';
 }

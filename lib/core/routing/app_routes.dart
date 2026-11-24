@@ -7,6 +7,7 @@ abstract final class AppRoutes {
   static const studentLogin = '/login/student';
   static const counsellorLogin = '/login/counsellor';
   static const register = '/register';
+  static const counsellorRegister = '/register/counsellor';
   static const forgotPassword = '/forgot-password';
   static const resetPassword = '/reset-password';
   static const privacy = '/privacy';
@@ -85,7 +86,7 @@ abstract final class AppRoutes {
 
   /// Routes reachable without signing in.
   static const publicRoutes = {
-    splash, welcome, studentLogin, counsellorLogin, register,
+    splash, welcome, studentLogin, counsellorLogin, register, counsellorRegister,
     forgotPassword, resetPassword, privacy, help, configNeeded,
   };
 

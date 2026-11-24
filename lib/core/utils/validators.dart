@@ -29,6 +29,19 @@ abstract final class Validators {
     return null;
   }
 
+  /// Counsellor e-mail: valid address on exactly the GMI staff domain
+  /// (not student.gmi.edu.my, not a look-alike or sub-domain).
+  static String? counsellorEmail(String? value) {
+    final base = email(value);
+    if (base != null) return base;
+    final domain = value!.trim().split('@').last.toLowerCase();
+    if (domain != AppConstants.counsellorEmailDomain) {
+      return 'Please use your GMI counsellor email '
+          '(name@${AppConstants.counsellorEmailDomain}).';
+    }
+    return null;
+  }
+
   /// Login only needs a non-empty password (never reveal the policy rules).
   static String? loginPassword(String? value) {
     if (value == null || value.isEmpty) return 'Please enter your password.';
@@ -93,6 +106,24 @@ abstract final class Validators {
     if (!RegExp(r'^[A-Za-z0-9]{5,20}$').hasMatch(v)) {
       return 'Student ID should be 5–20 letters or numbers.';
     }
+    return null;
+  }
+
+  /// GMI staff ID: letters/digits, 3–20 chars.
+  static String? staffId(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return 'Please enter your Staff ID.';
+    if (!RegExp(r'^[A-Za-z0-9]{3,20}$').hasMatch(v)) {
+      return 'Staff ID should be 3–20 letters or numbers.';
+    }
+    return null;
+  }
+
+  /// The 6-digit code e-mailed after sign-up.
+  static String? verificationCode(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return 'Please enter the 6-digit code.';
+    if (!RegExp(r'^[0-9]{6}$').hasMatch(v)) return 'The code is 6 digits.';
     return null;
   }
 

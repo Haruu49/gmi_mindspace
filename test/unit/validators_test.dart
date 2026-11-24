@@ -73,4 +73,35 @@ void main() {
       expect(Validators.positiveInt('30', max: 5000), isNull);
     });
   });
+  group('counsellor sign-up', () {
+    test('counsellorEmail accepts only the exact gmi.edu.my domain', () {
+      expect(Validators.counsellorEmail(''), isNotNull);
+      expect(Validators.counsellorEmail('a@gmi.edu.my'), isNull);
+      expect(Validators.counsellorEmail('  A@GMI.EDU.MY '), isNull);
+      const wrong = 'Please use your GMI counsellor email (name@gmi.edu.my).';
+      expect(Validators.counsellorEmail('a@student.gmi.edu.my'), wrong);
+      expect(Validators.counsellorEmail('a@mail.gmi.edu.my'), wrong);
+      expect(Validators.counsellorEmail('a@gmi.edu.my.evil.com'), wrong);
+      expect(Validators.counsellorEmail('a@example.com'), wrong);
+    });
+
+    test('staffId needs 3-20 letters or numbers', () {
+      expect(Validators.staffId(''), 'Please enter your Staff ID.');
+      const bad = 'Staff ID should be 3–20 letters or numbers.';
+      expect(Validators.staffId('ab'), bad);
+      expect(Validators.staffId('a!bcd'), bad);
+      expect(Validators.staffId('A' * 21), bad);
+      expect(Validators.staffId('STF001'), isNull);
+      expect(Validators.staffId(' stf001 '), isNull);
+    });
+
+    test('verificationCode is exactly six digits (trimmed)', () {
+      expect(Validators.verificationCode(''), 'Please enter the 6-digit code.');
+      expect(Validators.verificationCode('12345'), 'The code is 6 digits.');
+      expect(Validators.verificationCode('12345a'), 'The code is 6 digits.');
+      expect(Validators.verificationCode('1234567'), 'The code is 6 digits.');
+      expect(Validators.verificationCode('123456'), isNull);
+      expect(Validators.verificationCode(' 123456 '), isNull);
+    });
+  });
 }

@@ -20,6 +20,12 @@ void main() {
       expect(redirectFor(s, AppRoutes.splash), AppRoutes.welcome);
     });
 
+    test('counsellor sign-up is public, and signed-in users are sent home from it', () {
+      expect(redirectFor(const AuthSignedOut(), AppRoutes.counsellorRegister), isNull);
+      expect(redirectFor(AuthSignedIn(_user(AppRole.student)), AppRoutes.counsellorRegister),
+          AppRoutes.studentHome);
+    });
+
     test('help and privacy are always reachable', () {
       for (final s in <SessionState>[
         const AuthSignedOut(),

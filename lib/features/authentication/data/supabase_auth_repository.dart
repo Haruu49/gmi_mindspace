@@ -51,6 +51,52 @@ class SupabaseAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<void> signUpCounsellor({
+    required String fullName,
+    required String staffId,
+    required String email,
+    required String password,
+  }) {
+    return guard(() async {
+      final res = await _client.auth.signUp(
+        email: email.trim().toLowerCase(),
+        password: password,
+        emailRedirectTo: Env.authRedirectUrl,
+        // Intent + display data only. The database grants the counsellor role
+        // after the e-mail is verified, and only for @gmi.edu.my addresses.
+        data: {
+          'signup_type': 'counsellor',
+          'full_name': fullName.trim(),
+          'staff_id': staffId.trim().toUpperCase(),
+        },
+      );
+      if (res.session != null) {
+        // "Confirm email" is switched off in the project: no code was sent.
+        await _client.auth.signOut();
+        throw const AppFailure(
+          'Counsellor sign-up is not available right now. '
+          'Please contact the GMI Counselling Unit.',
+        );
+      }
+    });
+  }
+
+  @override
+  Future<void> verifyEmailCode({required String email, required String code}) =>
+      guard(() => _client.auth.verifyOTP(
+            email: email.trim().toLowerCase(),
+            token: code.trim(),
+            type: OtpType.signup,
+          ));
+
+  @override
+  Future<void> resendEmailCode(String email) => guard(() => _client.auth.resend(
+        type: OtpType.signup,
+        email: email.trim().toLowerCase(),
+        emailRedirectTo: Env.authRedirectUrl,
+      ));
+
+  @override
   Future<void> signOut() => guard(() => _client.auth.signOut());
 
   @override
