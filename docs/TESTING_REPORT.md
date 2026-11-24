@@ -20,7 +20,7 @@ Fictional accounts only (`mindspace.student.a@example.test`, `mindspace.student.
 | Signed release APK: session persistence and offline behaviour (manual, adb) | Android emulator | **Passed** – see §4 |
 | **Learning Hub PDFs**, live storage checks (scratchpad script, REST API) | `gmi-mindspace-dev` | **Passed** – 12 / 12, see §4b |
 | Learning Hub PDFs in the release APK (manual, adb) | Android emulator | **Passed** – see §4b |
-| Physical Android phone | OPPO CPH2739, Android 16 | **Partly run** – release APK installed and opened, live sign-in and profile load by the owner; checklist §5 not done |
+| Physical Android phone | OPPO CPH2739, Android 16 (ColorOS), mobile data | **Partly run** – release APK installs and updates in place; student sign-in; Learning Hub **Open PDF**; counsellor **Attach PDF** via the phone's file picker, save, delete (see §4c). Full checklist §5 not done |
 | iOS simulator / physical iPhone | – | **Not run** (needs macOS + Xcode) |
 | TalkBack / VoiceOver walkthrough | – | **Not run** |
 
@@ -96,6 +96,24 @@ Release APK on the emulator (all **passed**; screenshots `07`–`10`):
 | Counsellor: deleting the resource also deletes its file from storage | Passed (checked in the database) |
 
 All test resources and files were removed afterwards (0 left in the bucket).
+
+## 4c. Physical phone: OPPO CPH2739, Android 16 (2026-11-24)
+
+Release APK installed over USB (`adb install -r`, update kept the app data). Fictional accounts
+only; the owner's own account was not used.
+
+| Step | Result |
+|---|---|
+| Student signs in over mobile data | Passed |
+| Learning Hub ▸ Stress Management shows the PDF resource with its PDF label | Passed |
+| **Open PDF** opens the file in Chrome's PDF viewer, which offers "download" | Passed |
+| Counsellor: **Attach PDF** opens the system file picker filtered to PDFs | Passed |
+| Picked file uploads; editor shows "MindSpace test worksheet.pdf · 1 KB" | Passed |
+| Save stores path, name and size; file present in storage | Passed (checked in the database) |
+| Deleting the resource removes the file from storage | Passed (checked in the database) |
+| Sign-out of both accounts | Passed |
+
+All temporary resources, files (including the test PDF copied to the phone) were removed.
 
 ## 5. Manual device checklist
 
