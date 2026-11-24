@@ -10,6 +10,7 @@ Google Play or App Store submission, and the app must not be submitted to either
 | Version | `1.0.0+1` (`pubspec.yaml`: name `1.0.0`, build number `1`) |
 | Supabase project | `gmi-mindspace-dev` (the only project that exists today) |
 | Auth deep link | `my.edu.gmi.mindspace://auth-callback` |
+| Distribution | GitHub Releases (pre-release, public download) – see §2.4 |
 
 > **Production configuration today points at the development Supabase project.** There is
 > no separate production project yet. See [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
@@ -92,10 +93,27 @@ $BT/aapt dump badging build/app/outputs/flutter-apk/app-release.apk | head -1
 No camera, location, contacts, microphone or storage permission is requested. Counsellors pick
 Learning Hub images through the system photo picker, which needs no permission.
 
-### 2.4 Distribute to testers
+### 2.4 Distribute to testers (GitHub Releases)
 
-Share the APK privately (e.g. a restricted Google Drive / OneDrive link or USB). Do not post it
-publicly. Testers follow [INSTALLATION.md › Installing the APK](INSTALLATION.md#installing-the-android-apk).
+The APK is published as a **pre-release** on GitHub:
+<https://github.com/Haruu49/gmi_mindspace/releases>. The repository is public, so **anyone with
+the link can download it**; the release notes state that it is a testing build for fictional data
+only. (Decision of the project owner, 2026-11-24. Google Play is not used.)
+
+For each new tester build:
+1. Bump the build number in `pubspec.yaml`, commit and push (clean working tree).
+2. Build and verify the APK (§2.2).
+3. Publish (tag = version name + test number):
+   ```bash
+   cp build/app/outputs/flutter-apk/app-release.apk GMI-MindSpace-1.0.0-test.2.apk
+   sha256sum GMI-MindSpace-1.0.0-test.2.apk
+   gh release create v1.0.0-test.2 GMI-MindSpace-1.0.0-test.2.apk --prerelease \
+     --title "GMI MindSpace 1.0.0 – test build 2" --notes-file <notes.md>
+   ```
+4. Put the SHA-256 checksum in the release notes. Never attach the keystore, `key.properties`,
+   `env/*.json` or any other secret.
+
+Testers follow [INSTALLATION.md › Installing the APK](INSTALLATION.md#installing-the-android-apk).
 
 ---
 

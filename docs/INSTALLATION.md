@@ -16,9 +16,11 @@ For selected testers only. The app is **not** on Google Play.
 **You need:** an Android phone running **Android 7.0 or newer**, about 150 MB free space, and the
 file `app-release.apk` sent to you privately by the project team.
 
-1. **Get the file onto the phone.** Download it from the private link you were sent, or copy it
+1. **Get the file onto the phone.** On the phone, open
+   <https://github.com/Haruu49/gmi_mindspace/releases>, find the newest **GMI MindSpace … test build**
+   and tap the `.apk` file under *Assets* (only download it from this page). Or copy the file
    over USB into the phone's *Download* folder.
-2. **Open it.** Open the **Files** (or *My Files*) app ▸ *Downloads* ▸ tap `app-release.apk`.
+2. **Open it.** Open the **Files** (or *My Files*) app ▸ *Downloads* ▸ tap the downloaded `GMI-MindSpace-….apk`.
 3. **Allow the install.** Android asks whether to allow apps from this source. Tap
    **Settings** ▸ switch on **Allow from this source** for the app you used (Files or Chrome) ▸
    press back.

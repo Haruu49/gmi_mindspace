@@ -9,6 +9,14 @@ built with Flutter (Android + iOS), Riverpod, GoRouter and Supabase (PostgreSQL 
 > selected testers; iOS is configured but not yet built. See [Readiness](#readiness) and
 > [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) for exactly what has and has not been verified.
 
+## Download (Android test build)
+
+**[Latest test build on GitHub Releases](https://github.com/Haruu49/gmi_mindspace/releases)** – a
+signed APK for Android 7.0+. It is a **testing build**: it connects to the development database,
+so use fictional details only, and do not rely on it for support or emergencies. Install steps:
+[docs/INSTALLATION.md](docs/INSTALLATION.md#installing-the-android-apk). Not on Google Play; no
+iOS build yet.
+
 ## Documentation
 
 | Document | For |

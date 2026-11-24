@@ -25,6 +25,7 @@ Status on 2026-11-24. Severity: **High** = must be fixed before any real student
 | M6 | Session stored in SharedPreferences | supabase_flutter keeps the session in app-private storage, not Android Keystore / iOS Keychain. Consider secure storage. |
 | M7 | Screen-reader review not done | Automated checks cover contrast, 48 dp tap targets, 130 % text and 7 screen sizes. No TalkBack / VoiceOver walkthrough has been done. |
 | M8 | Signing key backup | The Android release key exists only on the development laptop (`~/.gmi-mindspace-signing/`). If the laptop is lost before it is backed up, installed copies cannot be updated. |
+| M9 | Test APK is publicly downloadable | The APK is a public GitHub pre-release (owner's decision). Anyone can install it and create a student account on the **development** project, so real students could enter real data before the privacy review (H3) and production project (H2) exist. Watch new sign-ups; move to a production project before announcing it widely. |
 
 ## Low
 
