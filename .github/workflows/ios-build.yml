@@ -1,0 +1,102 @@
+# Builds the iOS app on a GitHub-hosted Mac (no Apple signing) to prove it
+# compiles, and attaches an UNSIGNED .ipa to a GitHub release.
+#
+# The unsigned .ipa cannot be installed directly: testers must sign it with
+# their own Apple ID using a sideloading tool (AltStore / Sideloadly) and
+# reinstall every 7 days. See docs/INSTALLATION.md › iPhone.
+#
+# Needs repository secrets SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY (the
+# publishable key only – never the secret / service-role key).
+name: iOS build (unsigned)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'lib/**'
+      - 'ios/**'
+      - 'assets/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/ios-build.yml'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Attach the .ipa to this existing release (e.g. v1.0.0-test.1). Leave empty to only build.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use the newest Xcode on the runner
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.50.1'
+          cache: true
+
+      - name: Supabase settings (publishable key only)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          mkdir -p env
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::warning::Supabase secrets missing – the app will open on its 'Setup needed' screen."
+            echo '{}' > env/ci.json
+          else
+            jq -n --arg url "$SUPABASE_URL" --arg key "$SUPABASE_PUBLISHABLE_KEY" \
+              '{SUPABASE_URL: $url, SUPABASE_PUBLISHABLE_KEY: $key, AUTH_REDIRECT_URL: "my.edu.gmi.mindspace://auth-callback"}' \
+              > env/ci.json
+          fi
+
+      - name: Get packages
+        run: flutter pub get
+
+      - name: Build iOS (release, no code signing)
+        run: flutter build ios --release --no-codesign --dart-define-from-file=env/ci.json
+
+      - name: Package unsigned .ipa
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)
+          IPA="GMI-MindSpace-${VERSION}-ios-unsigned.ipa"
+          rm -rf Payload && mkdir Payload
+          cp -R build/ios/iphoneos/Runner.app Payload/
+          zip -qry "$IPA" Payload
+          echo "IPA=$IPA" >> "$GITHUB_ENV"
+          ls -lh "$IPA"
+          shasum -a 256 "$IPA" | tee "$IPA.sha256"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-unsigned-ipa
+          path: |
+            ${{ env.IPA }}
+            ${{ env.IPA }}.sha256
+          retention-days: 30
+
+      - name: Attach to the release
+        if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+        run: gh release upload "$TAG" "$IPA" --clobber
