@@ -5,7 +5,9 @@ Two audiences:
 - **[Testers](#installing-the-android-apk)** – install the app on an Android phone from an APK file.
 - **[Developers](#developer-setup)** – set up the project on a computer, run tests, build the app.
 
-iPhone installation is covered in [DEPLOYMENT.md › iOS](DEPLOYMENT.md#3-ios) (it needs a Mac).
+- **[iPhone testers (advanced)](#installing-on-an-iphone-advanced-unsigned-test-build)** – sideload the unsigned iOS test build.
+
+Proper iPhone distribution (TestFlight / Ad Hoc) is covered in [DEPLOYMENT.md › iOS](DEPLOYMENT.md#3-ios).
 
 ---
 
@@ -44,6 +46,31 @@ server under your account.
 **Problems?** See [USER_GUIDE.md › Troubleshooting](USER_GUIDE.md#troubleshooting).
 
 ---
+
+## Installing on an iPhone (advanced, unsigned test build)
+
+GitHub builds an **unsigned** iOS file, `GMI-MindSpace-1.0.0-ios-unsigned.ipa`, on every release.
+An iPhone will not install it directly: you sign it with **your own Apple ID** using a sideloading
+tool on a computer. This is meant for developers and technical testers, not for students. The
+proper route for students is TestFlight ([DEPLOYMENT.md › 3.7](DEPLOYMENT.md#37-testflight-internal-testers)).
+
+**You need:** an iPhone with iOS 15 or newer, a Windows PC or Mac, a USB cable, and an Apple ID.
+Using a **separate Apple ID** is recommended, because you type its password into the tool.
+
+1. Download the `.ipa` from the newest release on
+   <https://github.com/Haruu49/gmi_mindspace/releases> (on the computer).
+2. Install **Sideloadly** (<https://sideloadly.io>). On Windows also install iTunes and iCloud
+   from Apple's website (not the Microsoft Store version).
+3. Connect the iPhone by USB, unlock it and tap **Trust**.
+4. Open Sideloadly, drag the `.ipa` in, enter your Apple ID, tap **Start**. If Sideloadly reports
+   that the bundle ID is unavailable, enable its option to change the bundle ID.
+5. On the iPhone: **Settings ▸ Privacy & Security ▸ Developer Mode ▸ On** (restart when asked).
+6. **Settings ▸ General ▸ VPN & Device Management ▸** your Apple ID **▸ Trust**.
+7. Open GMI MindSpace.
+
+**Limits of a free Apple ID:** the app **stops opening after 7 days** and must be signed again
+(repeat step 4, or use AltStore, which can refresh it over Wi-Fi); at most 3 sideloaded apps at a
+time. A paid Apple Developer account extends this to one year.
 
 ## Developer setup
 

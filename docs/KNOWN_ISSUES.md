@@ -18,7 +18,7 @@ Status on 2026-11-24. Severity: **High** = must be fixed before any real student
 | # | Issue | Detail |
 |---|---|---|
 | M1 | Barely tested on physical Android phones | Automated testing ran on the emulator (`Medium_Phone`, API 37). On one real phone (OPPO CPH2739, Android 16) the release APK installed and updated, signed in, and the Learning Hub PDF flows (open as student, attach / save / delete as counsellor) passed; the full device checklist has not been done. Older Android versions (minimum supported: 7.0) and other manufacturers (Samsung, Xiaomi) are untested. |
-| M2 | iOS never built or run | Configured on Linux; needs a Mac with Xcode for the first build, simulator and iPhone test. |
+| M2 | iOS builds but never run | Since 2026-11-24 GitHub Actions builds the iOS app (Xcode 26.6, unsigned) successfully. It has **not** been run on a simulator or iPhone, and is not signed: proper iPhone distribution needs the Apple Developer Program (TestFlight / Ad Hoc). |
 | M3 | Accepted risk: any `@gmi.edu.my` mailbox can become a counsellor | Decided by the project owner. Every promotion is audited; admins can demote / deactivate. |
 | M4 | Leaked-password protection off | Supabase Auth ▸ Password security. One click in the dashboard. |
 | M5 | Online meeting links readable through the API | `programmes.online_url` of published programmes can be read by any signed-in student through the API; the app shows it only after registration. Move it behind a function if links must stay private. |

@@ -21,7 +21,8 @@ Fictional accounts only (`mindspace.student.a@example.test`, `mindspace.student.
 | **Learning Hub PDFs**, live storage checks (scratchpad script, REST API) | `gmi-mindspace-dev` | **Passed** – 12 / 12, see §4b |
 | Learning Hub PDFs in the release APK (manual, adb) | Android emulator | **Passed** – see §4b |
 | Physical Android phone | OPPO CPH2739, Android 16 (ColorOS), mobile data | **Partly run** – release APK installs and updates in place; student sign-in; Learning Hub **Open PDF**; counsellor **Attach PDF** via the phone's file picker, save, delete (see §4c). Full checklist §5 not done |
-| iOS simulator / physical iPhone | – | **Not run** (needs macOS + Xcode) |
+| iOS build (`.github/workflows/ios-build.yml`) | GitHub Actions macOS runner, Xcode 26.6 | **Passed** – release build without code signing, `Runner.app` 22.4 MB, unsigned `.ipa` 8.8 MB attached to `v1.0.0-test.1` (run 45362393932) |
+| iOS simulator / physical iPhone | – | **Not run** (needs macOS + Xcode, or a sideloaded build on an iPhone) |
 | TalkBack / VoiceOver walkthrough | – | **Not run** |
 
 Test device: Android emulator `Medium_Phone`, Android 17 (API 37), 1080 × 2400, x86_64, connected to

@@ -120,8 +120,27 @@ Testers follow [INSTALLATION.md › Installing the APK](INSTALLATION.md#installi
 ## 3. iOS
 
 > iOS apps can only be built on **macOS with Xcode**. This repository was prepared on Linux:
-> the iOS project is configured, but **no iOS build, simulator run or iPhone test has been done**.
+> the iOS project is configured, and since 2026-11-24 **GitHub Actions builds it successfully** (unsigned, §3.0),
+> but **no simulator run or iPhone test has been done** and no Apple-signed build exists.
 > A Windows or Linux machine cannot compile a native iOS app.
+
+### 3.0 Automatic build on GitHub (no Mac needed)
+
+`.github/workflows/ios-build.yml` builds the iOS app on a GitHub-hosted Mac **without code
+signing**:
+
+| When | What happens |
+|---|---|
+| Push to `main` that changes `lib/`, `ios/`, `assets/`, `pubspec.*` | Build only (compile check); `.ipa` kept as a workflow artifact for 30 days |
+| A release is published | Build and attach `GMI-MindSpace-<version>-ios-unsigned.ipa` to it |
+| Manual run (Actions ▸ iOS build ▸ Run workflow, optional *release_tag*) | Build, and attach to that release if a tag is given |
+
+It reads the repository secrets `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` (Settings ▸
+Secrets and variables ▸ Actions); without them the app opens on its *Setup needed* screen.
+
+The unsigned `.ipa` proves the app compiles and can be **sideloaded** with the tester's own Apple
+ID ([INSTALLATION.md › iPhone](INSTALLATION.md#installing-on-an-iphone-advanced-unsigned-test-build)).
+It is not a substitute for signing: TestFlight / Ad Hoc still need the Apple Developer Program.
 
 ### 3.1 What is already configured
 
